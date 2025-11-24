@@ -1,14 +1,20 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.PackageManager.Requests;
 using UnityEngine;
-using UnityEngine.Assertions;
+using UnityEditor;
+using UnityEngine.UIElements;
+using System.Net.Http.Headers;
 
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager instance;
     public GameObject _Player; //internal player variable
-    public static GameObject Player; private bool waitingForPlayer;
+    public static GameObject Player;
+
+    public delegate void PlayerNoLongerExistsCallback();
+    public static PlayerNoLongerExistsCallback onPlayerNoLongerExists = ()=>{};
+
 
     public GameObject EnemyPrefab;
 
@@ -42,10 +48,10 @@ public class EnemyManager : MonoBehaviour
             Debug.Log("Player not exist!!");
         }
 
-        AddEnemyRequest(new EnemySpawnRequest(10, 0.1f, 3f));
-        AddEnemyRequest(new EnemySpawnRequest(50, 0.01f, 1f));
+        AddEnemyRequest(new EnemySpawnRequest(5, 0.5f, 1f));
+        //AddEnemyRequest(new EnemySpawnRequest(3, 1f, 1f));
     }
-    
+
 
 
 
@@ -59,24 +65,30 @@ public class EnemyManager : MonoBehaviour
         //Spawn loop
         if (timeElapsed > NextSpawnTime && CurrentRequest.HasValue && requestCountRemaining > 0)
         {
-            SpawnEnemy(Random.value, Random.value);
+            SpawnEnemy(UnityEngine.Random.value, UnityEngine.Random.value);
             NextSpawnTime += CurrentRequest.Value.timeSeperation;
             requestCountRemaining--;
         }
 
         //Check if there are any requests
         if (requestCountRemaining > 0) return;
+        CurrentRequest = null;
         //Try get next request
         if (SpawnEnemyQueue.Count == 0) return;
 
         //Get and initialise next request        
         EnemySpawnRequest next = SpawnEnemyQueue.Dequeue();
 
-        NextSpawnTime += next.initDelay;
+        NextSpawnTime = timeElapsed + next.initDelay;
         requestCountRemaining = next.count;
         CurrentRequest = next;
         
         
+    }
+    public static bool AddEnemyRequest(EnemySpawnRequest request)
+    {
+        SpawnEnemyQueue.Enqueue(request);
+        return true;
     }
 
     private bool Internal_SpawnEnemy(Vector2 position)
@@ -94,12 +106,33 @@ public class EnemyManager : MonoBehaviour
         bool result = instance.Internal_SpawnEnemy(new Vector2(x,y));
         return result;
     }
-    public static bool AddEnemyRequest(EnemySpawnRequest request)
+
+    public static void KillPlayer()
     {
-        SpawnEnemyQueue.Enqueue(request);
-        return true;
+        instance._Player = null;
+        Player = null;
+        onPlayerNoLongerExists.Invoke();
     }
 
+}
+
+
+[CustomEditor(typeof(EnemyManager))]
+public class EnemyMangerEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+        EnemyManager mainScript = (EnemyManager)target;
+        if (GUILayout.Button("Kill player", GUILayout.Width(100), GUILayout.Height(50)))
+        {
+            EnemyManager.KillPlayer();
+        }
+        if (GUILayout.Button("Spawn enemies", GUILayout.Width(100), GUILayout.Height(50)))
+        {
+            EnemyManager.AddEnemyRequest(new EnemySpawnRequest(10, 0.1f, 0));
+        }
+    }
 }
 
 

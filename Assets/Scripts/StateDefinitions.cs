@@ -6,7 +6,7 @@ public enum EnemyState
 {
     PlayerNotFound,
     Spawning,
-    Waiting,
+    Idle,
     Patrol,
     Chasing,
     Attacking
