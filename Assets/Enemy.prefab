@@ -147,5 +147,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentState: 0
-  spawnDelay: 5
-  speed: 2.32
+  spawnDelay: 3
+  speed: 16.84

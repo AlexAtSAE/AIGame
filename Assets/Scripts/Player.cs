@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     public static GameObject GameObject;
     private Rigidbody rb;
     public float speed;
+    public float maxSpeed;
     private void Awake()
     {
         Instance = this;
@@ -38,5 +39,28 @@ public class Player : MonoBehaviour
         Vector2 Dir = TargetPos - MyPos;
         Vector2 DirNorm = Dir.normalized;
         rb.AddForce(new Vector3(DirNorm.x,0, DirNorm.y)*speed);
+        DampVelocity(0.9f, 0.9f);
+        ClampVelocity(maxSpeed);
     }
+
+
+    void DampVelocity(float factorX, float factorZ, float factorY = 1.0f)
+    {
+        Vector3 velocity = rb.velocity;
+        velocity.x *= factorX;
+        velocity.y *= factorY;
+        velocity.z *= factorZ;
+        rb.velocity = velocity;
+    }
+
+    void ClampVelocity(float maxSpeed)
+    {
+        Vector2 xzVelocity = new Vector2(rb.velocity.x, rb.velocity.z);
+        if (xzVelocity.magnitude >= maxSpeed)
+        {
+            Vector2 xzVelNorm = xzVelocity.normalized;
+            rb.velocity = new Vector3(xzVelNorm.x * maxSpeed, rb.velocity.y, xzVelNorm.y * maxSpeed);
+        }
+    }
+
 }

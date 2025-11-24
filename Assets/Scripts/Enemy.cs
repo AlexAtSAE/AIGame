@@ -5,14 +5,20 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    public EnemyState CurrentState = EnemyState.PlayerNotFound;
+    public Action<GameObject> onDeath = Self => { Debug.Log("dead"); };
+    public EnemyState CurrentState = 0;
     private float timeAlive = 0.0f;
+    public float timeHealthStart = 10.0f;
     public float spawnDelay;
     public float speed;
     private Rigidbody rb;
+    private Material mat;
+    private float traceInterval = 1f;
+    private bool lastHit = false;
     // Start is called before the first frame update
     private void Awake()
     {
+        mat = GetComponent<MeshRenderer>().material;
         rb = GetComponent<Rigidbody>();
     }
     void Start()
@@ -23,7 +29,15 @@ public class Enemy : MonoBehaviour
     
     void Update()
     {
+        
+        
         timeAlive += Time.deltaTime;
+        mat.SetFloat("_HealthPercent",(timeHealthStart-timeAlive)/timeHealthStart);
+        if(timeHealthStart - timeAlive < 0)
+        {
+            onDeath.Invoke(gameObject);
+            Destroy(gameObject);
+        }
         switch (CurrentState) {
             //Literally do nothging
             case EnemyState.PlayerNotFound:
@@ -142,7 +156,24 @@ public class Enemy : MonoBehaviour
     {
         if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
         float dist = Vector3.Distance(Player.GameObject.transform.position, transform.position);
-        
+        traceInterval -= Time.deltaTime;
+        if (traceInterval <= 0)
+        {
+            RaycastHit hit;
+            bool res = Physics.Raycast(transform.position, Player.GameObject.transform.position - transform.position, out hit);
+            if (res && hit.collider.gameObject.CompareTag("Obstacle")) { 
+                CurrentState = EnemyState.Idle;
+                lastHit = true;
+                return;
+            }
+            else
+            {
+                lastHit = false;
+            }
+                traceInterval = 1;
+        }
+        if (lastHit) return;
+
         if (dist > 15.0f)
         {
             Debug.Log("I lost you :(");
@@ -172,6 +203,7 @@ public class Enemy : MonoBehaviour
     {
         CurrentState = EnemyState.PlayerNotFound;
     }
+
     private void OnDrawGizmos()
     {
         switch (CurrentState)
