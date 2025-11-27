@@ -147,5 +147,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentState: 0
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  timeHealthStart: 60
   spawnDelay: 3
   speed: 16.84
+  damage: 1
+  defaultAttackCooldown: 1

@@ -10,6 +10,7 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
     public float speed;
     public float maxSpeed;
+    public float Health;
     private void Awake()
     {
         Instance = this;
@@ -63,4 +64,9 @@ public class Player : MonoBehaviour
         }
     }
 
+    public bool TakeDamage(float amount)
+    {
+        Health-=amount; 
+        return true;
+    }
 }
