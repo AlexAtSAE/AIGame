@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,7 +15,9 @@ public class CustomSlider : MonoBehaviour
     public float percentFull;
     //private float barWidth;
     //private float barHeight;
-    
+
+    private float roundnessGauge;
+
     private void Awake()
     {
         canvasRenderer = GetComponent<CanvasRenderer>();
@@ -41,11 +44,27 @@ public class CustomSlider : MonoBehaviour
         canvasRenderer.SetMaterial(mat,0);
 
         Debug.Log("set mesh");
+        
     }
+
+    private void Start()
+    {
+        Player.Instance.PlayerDamagedEvent += PlayerDamaged;
+    }
+
     void Update()
     {
         //barWidth = rect.rect.width;
         //barHeight = rect.rect.height;
+        roundnessGauge-=Time.deltaTime;
+
         mat.SetFloat("_Percent", percentFull);
+        mat.SetFloat("_Roundness", roundnessGauge);
+    }
+
+    private void PlayerDamaged(GameObject obj)
+    {
+        percentFull = Player.Instance.Health/ Player.Instance.MaxHealth;
+        roundnessGauge = 1.0f;
     }
 }

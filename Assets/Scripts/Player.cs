@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -11,11 +12,15 @@ public class Player : MonoBehaviour
     public float speed;
     public float maxSpeed;
     public float Health;
+    public float MaxHealth;
+
+    public Action<GameObject> PlayerDamagedEvent = (obj)=>{ };
     private void Awake()
     {
         Instance = this;
         GameObject = gameObject;
         rb = GetComponent<Rigidbody>();
+        if (MaxHealth == 0) MaxHealth = Health;
     }
     void Start()
     {
@@ -64,9 +69,10 @@ public class Player : MonoBehaviour
         }
     }
 
-    public bool TakeDamage(float amount)
+    public bool TakeDamage(float amount, GameObject invoker)
     {
-        Health-=amount; 
+        Health-=amount;
+        PlayerDamagedEvent.Invoke(invoker);
         return true;
     }
 }

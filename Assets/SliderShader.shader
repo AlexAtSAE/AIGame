@@ -48,14 +48,16 @@ Shader "Unlit/SliderShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float xcoord = i.uv; // between 0,1
-                float distance = length(i.uv-float2(_Percent,0.5));
-                distance = step(distance,_Roundness);
+                fixed xyratio = 800/100; // x/y
+                fixed2 scaledUV = fixed2(i.uv.x*xyratio,i.uv.y);
+                _Roundness = 1-clamp(_Roundness,-6,0);
+                float distance = length(fixed2(scaledUV.x*_Roundness,scaledUV.y)-float2(_Percent*xyratio*_Roundness,0.5));
+                distance = 1-step(1-distance,0.5);
                 float thisPixel = step(i.uv,_Percent);
                 thisPixel = max(distance,thisPixel);
 
                 fixed4 col = lerp(_ColorEmpty,_ColorFilled,thisPixel);
-                return distance;
+                return col;
                 //return float4(i.uv.xy,0,1);
             }
             ENDCG

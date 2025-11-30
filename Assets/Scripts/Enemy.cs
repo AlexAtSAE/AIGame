@@ -178,11 +178,17 @@ public class Enemy : MonoBehaviour
     }
     void Attacking()
     {
-        if(attackCooldown <= 0)
+        Vector2 PlayerPos = new Vector2(Player.GameObject.transform.position.x, Player.GameObject.transform.position.z);
+        Vector2 MyPos = new Vector2(transform.position.x, transform.position.z);
+        Vector2 Dir = PlayerPos - MyPos;
+        Vector2 DirNorm = Dir.normalized;
+        rb.AddForce(new Vector3(DirNorm.x, 0, DirNorm.y) * speed);
+        rb.maxLinearVelocity = 10.0f;
+        if (attackCooldown <= 0)
         {
             if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
             Debug.Log("Attack!");
-            Player.Instance.TakeDamage(damage);
+            Player.Instance.TakeDamage(damage,gameObject);
             attackCooldown = defaultAttackCooldown;
         }
     }
