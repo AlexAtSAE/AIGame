@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Enemy : MonoBehaviour
 {
@@ -19,30 +20,55 @@ public class Enemy : MonoBehaviour
     private bool lastHit = false;
     [SerializeField] private float defaultAttackCooldown = 1f;
     private float attackCooldown = 1f;
+    private float timeIdle;
+    private NavMeshAgent agent;
+    private List<Vector3> navigationPositions;
+    private int navigationPosIndex;
+    
+
     // Start is called before the first frame update
     private void Awake()
     {
         mat = GetComponent<MeshRenderer>().material;
         rb = GetComponent<Rigidbody>();
+        agent = GetComponent<NavMeshAgent>();
+        
+        navigationPositions = new List<Vector3>();
+        navigationPositions.Add(new Vector3(UnityEngine.Random.Range(-20, 20),0.5f, UnityEngine.Random.Range(-20, 20)));
+        navigationPositions.Add(new Vector3(UnityEngine.Random.Range(-20, 20),0.5f, UnityEngine.Random.Range(-20, 20)));
+        navigationPositions.Add(new Vector3(UnityEngine.Random.Range(-20, 20),0.5f, UnityEngine.Random.Range(-20, 20)));
+        
+
     }
     void Start()
     {
         EnemyManager.onPlayerNoLongerExists += onPlayerNoLongerExists;
+        rb.maxLinearVelocity = 10.0f;
     }
 
     
     void Update()
     {
-
+        //timers
         timeAlive += Time.deltaTime;
         attackCooldown -= Time.deltaTime;
+
+        //material
         mat.SetFloat("_HealthPercent",(timeHealthStart-timeAlive)/timeHealthStart);
+
+        //raycast
         PeriodicPlayerRaycast();
+
+        //life
         if(timeHealthStart - timeAlive < 0)
         {
             onDeath.Invoke(gameObject);
             Destroy(gameObject);
         }
+
+
+
+        //State conditions
         switch (CurrentState) {
             //Literally do nothging
             case EnemyState.PlayerNotFound:
@@ -74,6 +100,7 @@ public class Enemy : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        //Physics
         switch (CurrentState) {
             case EnemyState.Idle:
             //We know player exists
@@ -91,7 +118,6 @@ public class Enemy : MonoBehaviour
             case EnemyState.Attacking:
                 Attacking();
                 break;
-
         }
     }
     void PlayerNotFound()
@@ -100,13 +126,13 @@ public class Enemy : MonoBehaviour
     }
     void PlayerNotFound_Condition()
     {
-        if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
+        if (Player.GameObject == null) { ChangeState(EnemyState.PlayerNotFound); return; }
         if (EnemyManager.Player == null) return;
         //Player just found
         if (timeAlive > spawnDelay)
-            CurrentState = EnemyState.Idle;
+            ChangeState(EnemyState.Idle);
         else
-            CurrentState = EnemyState.Spawning;
+            ChangeState(EnemyState.Spawning);
     }
     void Spawning()
     {
@@ -114,76 +140,88 @@ public class Enemy : MonoBehaviour
     }
     void Spawning_Condition()
     {
-        if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
+        if (Player.GameObject == null) { ChangeState(EnemyState.PlayerNotFound); return; }
         if (timeAlive > spawnDelay)
-            CurrentState = EnemyState.Idle;
+            ChangeState(EnemyState.Idle);
     }
     void Idle()
     {
+        timeIdle += Time.deltaTime;
         if (Player.GameObject == null) return;
         rb.AddForce(rb.velocity * -1 * 0.2f);
     }
     void Idle_Condition()
     {
-        if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
+        if (Player.GameObject == null) { ChangeState(EnemyState.PlayerNotFound); return; }
 
-        if (lastHit)
+        
+
+        if (Vector3.Distance(Player.position, transform.position) < 10.0f && !lastHit)
         {
-            CurrentState = EnemyState.Idle;
+            ChangeState(EnemyState.Chasing);
             return;
+            
         }
 
-        if (Vector3.Distance(Player.GameObject.transform.position, transform.position) < 10.0f)
+        if (timeIdle > 5)
         {
-            Debug.Log("I see you!!");
-            CurrentState = EnemyState.Chasing;
+            ChangeState(EnemyState.Patrol);
         }
+
     }
     void Patrol()
     {
-
+        //pick random points and walk to them
+        Vector3 currentPos = navigationPositions[navigationPosIndex % navigationPositions.Count];
+        if (Vector3.Distance(currentPos,transform.position) < 0.5f)
+        {
+            navigationPosIndex = navigationPosIndex + 1;
+        }
+        agent.SetDestination(currentPos);
     }
     void Patrol_Condition()
     {
-        if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
-    }
-    void Chasing()
-    {
-        Vector2 PlayerPos = new Vector2(Player.GameObject.transform.position.x, Player.GameObject.transform.position.z);
-        Vector2 MyPos = new Vector2(transform.position.x, transform.position.z);
-        Vector2 Dir = PlayerPos-MyPos; 
-        Vector2 DirNorm = Dir.normalized;
-        rb.AddForce(new Vector3(DirNorm.x,0, DirNorm.y)*speed);
-    }
-    void Chasing_Condition()
-    {
-        if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
-        float dist = Vector3.Distance(Player.GameObject.transform.position, transform.position);
-       
-        if (lastHit)
+        if (Player.GameObject == null) { ChangeState(EnemyState.PlayerNotFound); return; }
+
+        if (Vector3.Distance(Player.position, transform.position) < 10.0f && !lastHit)
         {
-            CurrentState = EnemyState.Idle;
+            ChangeState(EnemyState.Chasing);
             return;
         }
 
-        if (dist > 15.0f)
+    }
+    void Chasing()
+    {
+        /*Vector2 PlayerPos = new Vector2(Player.position.x, Player.position.z);
+        Vector2 MyPos = new Vector2(transform.position.x, transform.position.z);
+        Vector2 Dir = PlayerPos-MyPos; 
+        Vector2 DirNorm = Dir.normalized;
+        rb.AddForce(new Vector3(DirNorm.x,0, DirNorm.y)*speed);*/
+        agent.SetDestination(Player.position);
+    }
+    void Chasing_Condition()
+    {
+        if (Player.GameObject == null) { ChangeState(EnemyState.PlayerNotFound); return; }
+        float dist = Vector3.Distance(Player.position, transform.position);
+       
+
+        if (dist > 15.0f || lastHit)
         {
-            Debug.Log("I lost you :(");
-            CurrentState = EnemyState.Idle;
+            ChangeState(EnemyState.Idle);
         }
         else if (dist < 1.5f) 
         {
-            CurrentState = EnemyState.Attacking;
+            ChangeState(EnemyState.Attacking);
         }
     }
     void Attacking()
     {
-        Vector2 PlayerPos = new Vector2(Player.GameObject.transform.position.x, Player.GameObject.transform.position.z);
+        Vector2 PlayerPos = new Vector2(Player.position.x, Player.position.z);
         Vector2 MyPos = new Vector2(transform.position.x, transform.position.z);
         Vector2 Dir = PlayerPos - MyPos;
         Vector2 DirNorm = Dir.normalized;
         rb.AddForce(new Vector3(DirNorm.x, 0, DirNorm.y) * speed);
-        rb.maxLinearVelocity = 10.0f;
+        
         if (attackCooldown <= 0)
         {
             if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
@@ -195,12 +233,13 @@ public class Enemy : MonoBehaviour
     void Attacking_Condition()
     {
         if (Player.GameObject == null) { CurrentState = EnemyState.PlayerNotFound; return; }
-        float dist = Vector3.Distance(Player.GameObject.transform.position, transform.position);
+        float dist = Vector3.Distance(Player.position, transform.position);
         if (dist > 2.0f)
         {
             Debug.Log("I cant attack you!");
             CurrentState = EnemyState.Chasing;
         }
+
     }
 
     void onPlayerNoLongerExists()
@@ -211,13 +250,13 @@ public class Enemy : MonoBehaviour
     void PeriodicPlayerRaycast()
     {
         if (Player.GameObject == null) { return; }
-        float dist = Vector3.Distance(Player.GameObject.transform.position, transform.position);
+        float dist = Vector3.Distance(Player.position, transform.position);
         traceInterval -= Time.deltaTime;
         if (traceInterval <= 0)
         {
             traceInterval = 1;
             RaycastHit hit;
-            bool res = Physics.Raycast(transform.position, Player.GameObject.transform.position - transform.position, out hit, obstacleLayer);
+            bool res = Physics.Raycast(transform.position, Player.position - transform.position, out hit, obstacleLayer);
             if (res && hit.collider.gameObject.CompareTag("Obstacle"))
             {
                 Debug.Log("Can not see player");
@@ -233,7 +272,27 @@ public class Enemy : MonoBehaviour
             
         }
     }
+    void ChangeState(EnemyState toState)
+    {
+        OnStateChanged(toState);
+        CurrentState = toState;
+    }
 
+    void OnStateChanged(EnemyState changedTo)
+    {
+        Debug.Log($"Changed to {changedTo}");
+        switch (changedTo)
+        {
+            case EnemyState.Attacking:
+                attackCooldown = 0;
+                break;
+            case EnemyState.Idle:
+                timeIdle = 0;
+                break;
+            default:
+                break;
+        }
+    }
     private void OnDrawGizmos()
     {
         switch (CurrentState)

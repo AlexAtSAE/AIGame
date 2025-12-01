@@ -48,7 +48,7 @@ public class EnemyManager : MonoBehaviour
             Debug.Log("Player not exist!!");
         }
 
-        AddEnemyRequest(new EnemySpawnRequest(5, 0.5f, 1f));
+        //AddEnemyRequest(new EnemySpawnRequest(5, 0.5f, 1f));
         //AddEnemyRequest(new EnemySpawnRequest(3, 1f, 1f));
     }
 
@@ -93,7 +93,7 @@ public class EnemyManager : MonoBehaviour
 
     private bool Internal_SpawnEnemy(Vector2 position)
     {
-        Instantiate(EnemyPrefab, new Vector3(position.x, 10.0f, position.y), Quaternion.identity);
+        Instantiate(EnemyPrefab, new Vector3(position.x, 0.5f, position.y), Quaternion.identity);
         return false;
     }
     public static bool SpawnEnemy(Vector2 position)

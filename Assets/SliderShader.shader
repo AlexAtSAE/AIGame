@@ -6,6 +6,7 @@ Shader "Unlit/SliderShader"
         _Roundness("Roundness", Float) = 1
         _ColorFilled ("Color filled", Color) = (0,1,0,1)
         _ColorEmpty ("Color empty", Color) = (1,0,0,1)
+        _XYRatio ("XYRatio", Float) = 0.125
     }
     SubShader
     {
@@ -37,6 +38,7 @@ Shader "Unlit/SliderShader"
             float4 _ColorEmpty;
             float _Percent;
             float _Roundness;
+            float _XYRatio; //x/y
 
             v2f vert (appdata v)
             {
@@ -48,10 +50,9 @@ Shader "Unlit/SliderShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed xyratio = 800/100; // x/y
-                fixed2 scaledUV = fixed2(i.uv.x*xyratio,i.uv.y);
+                fixed2 scaledUV = fixed2(i.uv.x*_XYRatio,i.uv.y);
                 _Roundness = 1-clamp(_Roundness,-6,0);
-                float distance = length(fixed2(scaledUV.x*_Roundness,scaledUV.y)-float2(_Percent*xyratio*_Roundness,0.5));
+                float distance = length(fixed2(scaledUV.x*_Roundness,scaledUV.y)-float2(_Percent*_XYRatio*_Roundness,0.5));
                 distance = 1-step(1-distance,0.5);
                 float thisPixel = step(i.uv,_Percent);
                 thisPixel = max(distance,thisPixel);

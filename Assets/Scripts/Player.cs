@@ -15,6 +15,12 @@ public class Player : MonoBehaviour
     public float MaxHealth;
 
     public Action<GameObject> PlayerDamagedEvent = (obj)=>{ };
+
+
+
+    public static Vector3 position { get { return GameObject.transform.position; } private set {} }
+
+
     private void Awake()
     {
         Instance = this;
