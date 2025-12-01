@@ -35,7 +35,7 @@ public class CustomSlider : MonoBehaviour
 
     private void Start()
     {
-        Player.Instance.PlayerDamagedEvent += PlayerDamaged;
+        Player.PlayerDamagedEvent += PlayerDamaged;
     }
 
     void Update()

@@ -152,7 +152,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   timeHealthStart: 60
-  spawnDelay: 3
+  spawnDelay: 1
   speed: 16.84
   damage: 1
   defaultAttackCooldown: 1

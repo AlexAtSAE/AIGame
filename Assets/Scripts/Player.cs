@@ -14,7 +14,7 @@ public class Player : MonoBehaviour
     public float Health;
     public float MaxHealth;
 
-    public Action<GameObject> PlayerDamagedEvent = (obj)=>{ };
+    public static Action<GameObject> PlayerDamagedEvent = (obj)=>{ };
 
 
 
@@ -43,6 +43,7 @@ public class Player : MonoBehaviour
         bool res = Physics.Raycast(ray, out info);
         if(res) TargetPos = new Vector2(info.point.x,info.point.z);
         Debug.DrawLine(info.point, info.point + Vector3.up * 10, res? Color.red : Color.green); 
+        if(Health <= 0) Destroy(gameObject);
     }
 
     private void FixedUpdate()

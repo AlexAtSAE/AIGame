@@ -10,6 +10,7 @@ public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager instance;
     public GameObject _Player; //internal player variable
+    public GameObject PlayerPrefab; 
     public static GameObject Player;
 
     public delegate void PlayerNoLongerExistsCallback();
@@ -26,6 +27,8 @@ public class EnemyManager : MonoBehaviour
 
     private float NextSpawnTime = 0;
     private int requestCountRemaining = 0;
+
+    public static Action<GameObject> onEnemyDied = (obj) => { };
     
     private void Awake()
     {
@@ -48,7 +51,7 @@ public class EnemyManager : MonoBehaviour
             Debug.Log("Player not exist!!");
         }
 
-        //AddEnemyRequest(new EnemySpawnRequest(5, 0.5f, 1f));
+        AddEnemyRequest(new EnemySpawnRequest(1, 0.5f, 1f));
         //AddEnemyRequest(new EnemySpawnRequest(3, 1f, 1f));
     }
 
@@ -90,11 +93,15 @@ public class EnemyManager : MonoBehaviour
         SpawnEnemyQueue.Enqueue(request);
         return true;
     }
-
+    
     private bool Internal_SpawnEnemy(Vector2 position)
     {
-        Instantiate(EnemyPrefab, new Vector3(position.x, 0.5f, position.y), Quaternion.identity);
-        return false;
+        GameObject enemy = Instantiate(EnemyPrefab, new Vector3(position.x, 0.5f, position.y), Quaternion.identity);
+        Enemy script = enemy.GetComponent<Enemy>();
+        if (script != null)
+            script.onDeath += EnemyDied;
+
+            return false;
     }
     public static bool SpawnEnemy(Vector2 position)
     {
@@ -112,6 +119,31 @@ public class EnemyManager : MonoBehaviour
         instance._Player = null;
         Player = null;
         onPlayerNoLongerExists.Invoke();
+    }
+
+    private void EnemyDied(GameObject obj)
+    {
+        Debug.Log("Enemy died");
+        Enemy script = obj.GetComponent<Enemy>();
+        script.onDeath -= EnemyDied;
+        onEnemyDied.Invoke(obj);
+    }
+
+
+    //Game preview sake
+    public void spawnEnemiesUIButton(float rate)
+    {
+        AddEnemyRequest(new EnemySpawnRequest(10, rate, 0.0f));
+    }
+    public void respawnPlayerUIButton()
+    {
+        if(_Player == null)
+        {
+            Debug.Log("Spawning player");
+            GameObject obj = Instantiate(PlayerPrefab,new Vector3(0,10,0),Quaternion.identity);
+            _Player = obj;
+            Player = obj;
+        }
     }
 
 }
